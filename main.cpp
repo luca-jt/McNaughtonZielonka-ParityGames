@@ -1,6 +1,3 @@
-/*#include "AnaLinA.h"
-using namespace AnaLinA;*/
-
 #include <cstdio>
 #include <unordered_set>
 #include <algorithm>
