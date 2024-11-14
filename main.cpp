@@ -1,13 +1,13 @@
 #include <cstdio>
 #include <unordered_set>
 #include <algorithm>
-#include <tuple>
-using std::tuple;
+#include <utility>
+using std::pair;
 #include <string>
 using std::string;
 
 //
-// types + setup --------------------------------------------------------------------------------------
+// types + util --------------------------------------------------------------------------------------
 //
 
 enum NodeType {
@@ -19,10 +19,6 @@ struct ParityNode {
     char name;
     unsigned int prio;
     NodeType type;
-
-    ParityNode(char name, unsigned int prio, NodeType type)
-    : name(name), prio(prio), type(type)
-    {}
 
     bool operator == (ParityNode const& other) const {
         return name == other.name;
@@ -41,7 +37,7 @@ struct Edge {
     ParityNode node1;
     ParityNode node2;
 
-    Edge(const NodeSet& nodes, char char1, char char2)
+    Edge(NodeSet const& nodes, char char1, char char2)
     :   node1(*std::find_if(begin(nodes), end(nodes), [=](ParityNode const& node){ return node.name == char1; })),
         node2(*std::find_if(begin(nodes), end(nodes), [=](ParityNode const& node){ return node.name == char2; }))
     {}
@@ -59,7 +55,7 @@ struct edge_hash {
 
 using EdgeSet = std::unordered_set<Edge, edge_hash>;
 
-NodeSet difference(const NodeSet& nodes1, const NodeSet& nodes2) {
+NodeSet set_difference(NodeSet const& nodes1, NodeSet const& nodes2) {
     NodeSet difference;
     for (auto& node : nodes1) {
         if (!nodes2.contains(node)) {
@@ -69,7 +65,7 @@ NodeSet difference(const NodeSet& nodes1, const NodeSet& nodes2) {
     return difference;
 }
 
-NodeSet set_union(const NodeSet& nodes1, const NodeSet& nodes2) {
+NodeSet set_union(NodeSet const& nodes1, NodeSet const& nodes2) {
     NodeSet union_set = nodes1;
     union_set.insert(begin(nodes2), end(nodes2));
     return union_set;
@@ -80,15 +76,15 @@ NodeSet set_union(const NodeSet& nodes1, const NodeSet& nodes2) {
 //
 
 static NodeSet const NODES = {
-    ParityNode('a', 3, ADAM),
-    ParityNode('b', 3, EVE),
-    ParityNode('c', 1, ADAM),
-    ParityNode('d', 0, EVE),
-    ParityNode('e', 4, ADAM),
-    ParityNode('f', 4, EVE),
-    ParityNode('g', 1, ADAM),
-    ParityNode('h', 2, EVE),
-    ParityNode('i', 3, ADAM)
+    ParityNode{'a', 3, ADAM},
+    ParityNode{'b', 3, EVE},
+    ParityNode{'c', 1, ADAM},
+    ParityNode{'d', 0, EVE},
+    ParityNode{'e', 4, ADAM},
+    ParityNode{'f', 4, EVE},
+    ParityNode{'g', 1, ADAM},
+    ParityNode{'h', 2, EVE},
+    ParityNode{'i', 3, ADAM}
 };
 
 static EdgeSet const EDGES = {
@@ -121,10 +117,10 @@ static EdgeSet const EDGES = {
 };
 
 //
-// zielonka algo code -----------------------------------------------------------------------------------
+// mcnaughton zielonka algo code -----------------------------------------------------------------------------------
 //
 
-NodeSet reach_attr(NodeType type, NodeSet const& k, NodeSet const & nodes, EdgeSet const & edges) {
+NodeSet reach_attr(NodeType type, NodeSet const& k, NodeSet const& nodes, EdgeSet const& edges) {
     NodeSet attr = k;
     bool nodes_added = true;
     while (nodes_added) {
@@ -155,7 +151,7 @@ NodeSet reach_attr(NodeType type, NodeSet const& k, NodeSet const & nodes, EdgeS
 }
 
 // find the winning regions for eve and adam
-tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
+pair<NodeSet, NodeSet> mcnaughtonzielonka(NodeSet const& nodes, EdgeSet const& edges) {
     // find highest prio
     unsigned int max_prio = 0;
     for (auto& node : nodes) {
@@ -177,7 +173,7 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
         // calculate eve's reach attractor of K
         NodeSet attr = reach_attr(EVE, k, nodes, edges);
         // create a new subgame without the attractor
-        NodeSet subgame_nodes = difference(nodes, attr);
+        NodeSet subgame_nodes = set_difference(nodes, attr);
         EdgeSet subgame_edges;
         for (auto& edge : edges) {
             if (!attr.contains(edge.node1) && !attr.contains(edge.node2)) {
@@ -185,13 +181,13 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
             }
         }
         // calculate winning regions recursively
-        auto [eve_region, adam_region] = zielonka(subgame_nodes, subgame_edges);
-        if (eve_region == difference(nodes, attr)) {
+        auto [eve_region, adam_region] = mcnaughtonzielonka(subgame_nodes, subgame_edges);
+        if (eve_region == set_difference(nodes, attr)) {
             return {nodes, NodeSet{}};
         }
         auto opponent_attr = reach_attr(ADAM, adam_region, nodes, edges);
         // create a new subgame without the opponent attractor
-        NodeSet opp_subgame_nodes = difference(nodes, opponent_attr);
+        NodeSet opp_subgame_nodes = set_difference(nodes, opponent_attr);
         EdgeSet opp_subgame_edges;
         for (auto& edge : edges) {
             if (!opponent_attr.contains(edge.node1) && !opponent_attr.contains(edge.node2)) {
@@ -199,14 +195,14 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
             }
         }
         // winning regions of game without the opponent attractor
-        auto [opp_eve_region, opp_adam_region] = zielonka(opp_subgame_nodes, opp_subgame_edges);
+        auto [opp_eve_region, opp_adam_region] = mcnaughtonzielonka(opp_subgame_nodes, opp_subgame_edges);
         return {opp_eve_region, set_union(opp_adam_region, opponent_attr)};
 
     } else {
         // calculate adam's reach attractor of K
         NodeSet attr = reach_attr(ADAM, k, nodes, edges);
         // create a new subgame without the attractor
-        NodeSet subgame_nodes = difference(nodes, attr);
+        NodeSet subgame_nodes = set_difference(nodes, attr);
         EdgeSet subgame_edges;
         for (auto& edge : edges) {
             if (!attr.contains(edge.node1) && !attr.contains(edge.node2)) {
@@ -214,13 +210,13 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
             }
         }
         // calculate winning regions recursively
-        auto [eve_region, adam_region] = zielonka(subgame_nodes, subgame_edges);
-        if (adam_region == difference(nodes, attr)) {
+        auto [eve_region, adam_region] = mcnaughtonzielonka(subgame_nodes, subgame_edges);
+        if (adam_region == set_difference(nodes, attr)) {
             return {NodeSet{}, nodes};
         }
         auto opponent_attr = reach_attr(EVE, eve_region, nodes, edges);
         // create a new subgame without the opponent attractor
-        NodeSet opp_subgame_nodes = difference(nodes, opponent_attr);
+        NodeSet opp_subgame_nodes = set_difference(nodes, opponent_attr);
         EdgeSet opp_subgame_edges;
         for (auto& edge : edges) {
             if (!opponent_attr.contains(edge.node1) && !opponent_attr.contains(edge.node2)) {
@@ -228,7 +224,7 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
             }
         }
         // winning regions of game without the opponent attractor
-        auto [opp_eve_region, opp_adam_region] = zielonka(opp_subgame_nodes, opp_subgame_edges);
+        auto [opp_eve_region, opp_adam_region] = mcnaughtonzielonka(opp_subgame_nodes, opp_subgame_edges);
         return {set_union(opp_eve_region, opponent_attr), opp_adam_region};
     }
 }
@@ -238,13 +234,13 @@ tuple<NodeSet, NodeSet> zielonka(NodeSet const& nodes, EdgeSet const& edges) {
 //
 
 int main() {
-    auto [eve_region, adam_region] = zielonka(NODES, EDGES);
-    printf("EVE:\n");
+    auto [eve_region, adam_region] = mcnaughtonzielonka(NODES, EDGES);
+    printf("EVE: ");
     for (auto& node : eve_region) {
         printf("%c", node.name);
     }
     printf("\n");
-    printf("ADAM:\n");
+    printf("ADAM: ");
     for (auto& node : adam_region) {
         printf("%c", node.name);
     }
