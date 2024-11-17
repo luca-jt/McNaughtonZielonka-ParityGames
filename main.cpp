@@ -92,9 +92,9 @@ NodeSet set_union(NodeSet const& nodes1, NodeSet const& nodes2) {
 //
 
 static NodeSet const NODES = {
-    ParityNode{'a', 3, ADAM},
-    ParityNode{'b', 3, EVE},
-    ParityNode{'c', 2, ADAM},
+    ParityNode{'a', 3, EVE},
+    ParityNode{'b', 3, ADAM},
+    ParityNode{'c', 2, EVE},
     ParityNode{'d', 1, EVE},
     ParityNode{'e', 2, ADAM}
     /*ParityNode{'f', 4, EVE},
