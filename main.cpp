@@ -185,7 +185,7 @@ pair<NodeSet, NodeSet> mcnaughtonzielonka(NodeSet const& nodes, EdgeSet const& e
     // base case
     if (max_prio == 0) {
         // eve wins
-        cout << "returned base case with prio 0: W_E = " << node_set_string(nodes) << ", W_A = {}\n";
+        cout << "return base case prio 0: W_E = " << node_set_string(nodes) << ", W_A = {}\n";
         return {nodes, NodeSet{}};
     }
     // find nodes with that prio
@@ -212,7 +212,7 @@ pair<NodeSet, NodeSet> mcnaughtonzielonka(NodeSet const& nodes, EdgeSet const& e
         // calculate winning regions recursively
         auto [eve_region, adam_region] = mcnaughtonzielonka(subgame_nodes, subgame_edges);
         if (eve_region == set_difference(nodes, attr)) {
-            cout << "W_A' == Q\\Attr_E, return W_E = " << node_set_string(nodes) << ", W_A = {}\n";
+            cout << "W_A' == Q\\Attr_E -> return W_E = " << node_set_string(nodes) << ", W_A = {}\n";
             return {nodes, NodeSet{}};
         }
         auto opponent_attr = reach_attr(ADAM, adam_region, nodes, edges);
@@ -225,7 +225,7 @@ pair<NodeSet, NodeSet> mcnaughtonzielonka(NodeSet const& nodes, EdgeSet const& e
                 opp_subgame_edges.insert(edge);
             }
         }
-        cout << "subgame without Q\\B: " << node_set_string(opp_subgame_nodes) << "\n";
+        cout << "subgame with Q\\B: " << node_set_string(opp_subgame_nodes) << "\n";
         // winning regions of game without the opponent attractor
         auto [opp_eve_region, opp_adam_region] = mcnaughtonzielonka(opp_subgame_nodes, opp_subgame_edges);
         cout << "Eve: return W_E = " << node_set_string(opp_eve_region) << ", W_A = W_A' u B = " << node_set_string(set_union(opp_adam_region, opponent_attr)) << "\n";
@@ -247,7 +247,7 @@ pair<NodeSet, NodeSet> mcnaughtonzielonka(NodeSet const& nodes, EdgeSet const& e
         // calculate winning regions recursively
         auto [eve_region, adam_region] = mcnaughtonzielonka(subgame_nodes, subgame_edges);
         if (adam_region == set_difference(nodes, attr)) {
-            cout << "W_A' == Q\\Attr_E, return W_E = {}, W_A = " << node_set_string(nodes) << "\n";
+            cout << "W_A' == Q\\Attr_E -> return W_E = {}, W_A = " << node_set_string(nodes) << "\n";
             return {NodeSet{}, nodes};
         }
         auto opponent_attr = reach_attr(EVE, eve_region, nodes, edges);
